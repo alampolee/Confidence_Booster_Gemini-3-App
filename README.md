@@ -5,7 +5,7 @@ You cannot see Confidence, but this App can Track it.
 
 **Confidence Booster** is a all in one visualizer & tracker for your Confidence.
 
-## 🎥 Demo
+## 🎥 Youtube Demo Video
 [https://youtu.be/epwGiid7NrE]
 
 ## 🛠️ How it's made
