@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Confidence Forge - Interactive Demo</title>
+
+    <!-- Libraries -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography,container-queries"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
+    <!-- Fonts & Icons -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans:wght@400;500;700&display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
+        rel="stylesheet" />
+
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2b6cee",
+                        "background-light": "#f0f4f8",
+                        "background-dark": "#0f172a",
+                        "orb-light": "#86efac",
+                    },
+                    fontFamily: {
+                        "display": ["Plus Jakarta Sans", "sans-serif"],
+                    },
+                    borderRadius: { "pill": "9999px" },
+                    animation: {
+                        'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                },
+            },
+        }
+    </script>
+
+    <style>
+        /* --- 3D Capsule Logic --- */
+        .potion-container {
+            width: 160px;
+            height: 320px;
+            border-radius: 80px;
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.05);
+            position: relative;
+            overflow: hidden;
+            border: 4px solid rgba(255, 255, 255, 0.4);
+            z-index: 10;
+            transition: all 0.5s ease;
+        }
+
+        .dark .potion-container {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* The Liquid */
+        .potion-fill {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            transition: height 1.5s cubic-bezier(0.4, 0, 0.2, 1), background 1.5s ease;
+            box-shadow: 0 0 30px rgba(59, 130, 246, 0.4);
+        }
+
+        /* The Wave Animation */
+        .potion-wave {
+            position: absolute;
+            top: -20px;
+            left: -50%;
+            width: 200%;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 40%;
+            animation: wave 4s infinite linear;
+        }
+
+        @keyframes wave {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Bubbles */
+        .bubble {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+            animation: float 3s infinite ease-in;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0px);
+                opacity: 0;
+            }
+
+            50% {
+                opacity: 0.8;
+            }
+
+            100% {
+                transform: translateY(-40px);
+                opacity: 0;
+            }
+        }
+
+        /* Text 3D Effect */
+        .text-3d {
+            text-shadow: 0 1px 0 #ccc, 0 2px 0 #c9c9c9, 0 3px 0 #bbb, 0 4px 0 #b9b9b9, 0 5px 0 #aaa, 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .dark .text-3d {
+            text-shadow: 0 1px 0 #4a5568, 0 2px 0 #2d3748, 0 3px 0 #1a202c, 0 4px 0 #171923, 0 10px 20px rgba(0, 0, 0, 0.35);
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-200 dark:bg-slate-950 font-display transition-colors duration-300">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- GEMINI 3 LOGIC ---
+
+        const analyzeConfidence = async (inputText) => {
+            const url = '/api/analyze';
+
+            const payload = {
+                message: inputText
+            };
+
+            try {
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                return data;
+
+            } catch (error) {
+                console.error("Gemini Error:", error);
+                return { scoreChange: 0, feedback: "Backend connection issue. Check server.", category: "System" };
+            }
+        };
+
+        // --- COMPONENTS ---
+
+        // 1. Navigation Bar
+        const BottomNav = ({ activeTab, setTab }) => (
+            <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-[380px] h-20 bg-slate-900 dark:bg-slate-800/90 backdrop-blur-xl rounded-[2.5rem] flex items-center justify-around px-4 shadow-2xl z-50">
+                {['home', 'mic', 'analytics', 'person'].map((icon) => (
+                    <button
+                        key={icon}
+                        onClick={() => setTab(icon === 'mic' ? 'voice' : icon === 'analytics' ? 'insights' : icon === 'person' ? 'profile' : 'home')}
+                        className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${activeTab === (icon === 'mic' ? 'voice' : icon === 'analytics' ? 'insights' : icon === 'person' ? 'profile' : 'home') ? 'bg-slate-700/50 text-white' : 'text-slate-500 hover:text-white'}`}
+                    >
+                        <span className="material-symbols-rounded">{icon}</span>
+                    </button>
+                ))}
+            </nav>
+        );
+
+        // 2. Header
+        const Header = ({ level }) => (
+            <header className="pt-12 px-6 pb-4 flex items-center justify-between sticky top-0 z-50 bg-inherit/80 backdrop-blur-sm">
+                <div className="flex items-center gap-3">
+                    <div className="relative">
+                        <img className="w-12 h-12 rounded-2xl bg-white p-0.5 border border-slate-200 dark:border-slate-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBzYVCcwy5zYR-ZF7OZMSZqI3TH-7-neapXwVs7ARpCmF8Qi37sZN3j6pT7y7VaXgTA-88ByGS5fmjb0HaRSCXTvreU-wx5b4GPTmXFOGrYA196o6VRjhEVHI3UAgsLuH_wow_DCNpRgAW4Cu-IswgT4dKSwaZ6mobyaTvXd-FEirDyDiGhs_oPdWhmTnomqr5iUYDE1teWnlIdwhw3TanIjGZrceVDVuVHbY999uOCBMofEXIVN3wJlyjn17ZfG9-r2DkMHhEL2Wc" />
+                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white dark:border-slate-900 rounded-full"></div>
+                    </div>
+                    <div>
+                        <h1 className="font-bold text-lg leading-tight text-slate-900 dark:text-white">Hi, Alex 👋</h1>
+                        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{level}</p>
+                    </div>
+                </div>
+                <button onClick={() => document.documentElement.classList.toggle('dark')} className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm border border-slate-100 dark:border-slate-700">
+                    <span className="material-symbols-rounded text-slate-600 dark:text-slate-300">contrast</span>
+                </button>
+            </header>
+        );
+
+        // 3. The 3D Liquid Capsule (The Hero)
+        const ConfidenceCapsule = ({ score }) => {
+            // Determine styles based on score
+            let gradient, text, glowColor;
+
+            if (score < 30) {
+                gradient = "linear-gradient(180deg, #94a3b8 0%, #cbd5e1 100%)"; // Grey/Low
+                text = "Confidence fading...";
+                glowColor = "rgba(148, 163, 184, 0.4)";
+            } else if (score < 70) {
+                gradient = "linear-gradient(180deg, #F59E0B 0%, #EF4444 30%, #3B82F6 70%, #10B981 100%)"; // The "Juicy" Mix
+                text = "Building confidence...";
+                glowColor = "rgba(59, 130, 246, 0.4)";
+            } else if (score < 100) {
+                gradient = "linear-gradient(180deg, #F59E0B 0%, #EF4444 30%, #3B82F6 70%, #10B981 100%)";
+                text = "You're on fire!";
+                glowColor = "rgba(59, 130, 246, 0.6)";
+            } else {
+                gradient = "radial-gradient(circle at 50% 30%, #FFFFFF 0%, #93C5FD 25%, #3B82F6 60%, #1D4ED8 100%)"; // 100% Glow
+                text = "UNSTOPPABLE";
+                glowColor = "rgba(59, 130, 246, 0.9)";
+            }
+
+            return (
+                <div className="flex flex-col items-center py-6 relative">
+                    <div className="relative mb-6">
+                        {score === 100 && <div className="absolute inset-0 bg-blue-500/30 blur-3xl rounded-full scale-150 animate-pulse"></div>}
+
+                        <div className="potion-container">
+                            <div className="potion-fill" style={{ height: `${score}%`, background: gradient }}>
+                                <div className="potion-wave"></div>
+                                {/* Bubbles */}
+                                <div className="bubble left-1/4 w-2 h-2" style={{ animationDuration: '2s' }}></div>
+                                <div className="bubble left-3/4 w-3 h-3" style={{ animationDuration: '4s', animationDelay: '1s' }}></div>
+                            </div>
+                        </div>
+
+                        <div className="absolute -right-20 top-1/4 translate-y-[-50%] z-20">
+                            <span className="text-5xl font-extrabold text-slate-800 dark:text-white block text-3d tracking-tight">~{score}%</span>
+                            <span className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest pl-1">Confidence</span>
+                        </div>
+                    </div>
+                    <p className="text-slate-500 dark:text-slate-400 font-semibold tracking-wide animate-pulse">{text}</p>
+                </div>
+            );
+        };
+
+        // --- SCREENS ---
+
+        const HomeScreen = ({ score, feedback, setScore, setTab, onTextInput }) => {
+            const [inputValue, setInputValue] = useState("");
+
+            const handleEnter = (e) => {
+                if (e.key === 'Enter' && inputValue) {
+                    onTextInput(inputValue);
+                    setInputValue("");
+                }
+            };
+
+            return (
+                <main className="flex-1 px-6 pb-32">
+                    <ConfidenceCapsule score={score} />
+
+                    {/* Feedback Message */}
+                    <div className="text-center -mt-4 mb-6 h-6">
+                        <p className="text-slate-500 dark:text-slate-400 font-semibold tracking-wide animate-pulse text-sm">{feedback}</p>
+                    </div>
+
+                    {score >= 100 && (
+                        <div className="flex justify-center mb-6">
+                            <button className="group w-full max-w-[280px] relative bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-500 p-[2px] rounded-2xl shadow-[0_0_25px_rgba(251,191,36,0.3)] animate-pulse-fast">
+                                <div className="bg-white dark:bg-slate-900 rounded-[14px] px-4 py-3 flex items-center justify-between relative overflow-hidden h-full">
+                                    <div className="flex items-center gap-3 z-10">
+                                        <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                                            <span className="material-symbols-rounded">emoji_events</span>
+                                        </div>
+                                        <div className="text-left">
+                                            <h3 className="font-bold text-slate-800 dark:text-white text-sm">Reward Unlocked</h3>
+                                            <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase">Ready to claim</p>
+                                        </div>
+                                    </div>
+                                    <span className="material-symbols-rounded text-amber-500">arrow_forward</span>
+                                </div>
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Input Area */}
+                    <div className="relative mb-10">
+                        <div className="w-full bg-white dark:bg-slate-800 rounded-pill p-1.5 flex items-center shadow-sm border border-slate-100 dark:border-slate-700 focus-within:border-primary transition-colors">
+                            <div className="pl-4 pr-3 text-slate-300" onClick={() => setTab('voice')}><span className="material-symbols-rounded cursor-pointer hover:text-primary">mic</span></div>
+                            <input
+                                value={inputValue}
+                                onChange={(e) => setInputValue(e.target.value)}
+                                onKeyDown={handleEnter}
+                                className="flex-1 bg-transparent border-none focus:ring-0 text-slate-600 dark:text-slate-200 placeholder-slate-400 text-sm outline-none"
+                                placeholder="Log your latest win..."
+                                type="text"
+                            />
+                            <button onClick={() => { if (inputValue) { onTextInput(inputValue); setInputValue(""); } }} className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+                                <span className="material-symbols-rounded">arrow_upward</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Habits (Click these to demo score changes) */}
+                    <div className="mb-8">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Recent Habits</h2>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div onClick={() => onTextInput("I had a great gym session")} className="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm active:scale-95 transition-transform cursor-pointer">
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className="w-10 h-10 rounded-2xl bg-green-50 dark:bg-green-950/30 flex items-center justify-center"><span className="material-symbols-rounded text-green-500">fitness_center</span></div>
+                                    <span className="text-[10px] font-bold py-1 px-2 rounded-full bg-green-50 dark:bg-green-900/40 text-green-600 dark:text-green-400">+5%</span>
+                                </div>
+                                <h3 className="font-bold text-sm text-slate-900 dark:text-white">Gym Session</h3>
+                                <p className="text-xs text-slate-400 mt-0.5">Physical</p>
+                            </div>
+                            <div onClick={() => onTextInput("I spent 2 hours doomscrolling")} className="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm active:scale-95 transition-transform cursor-pointer">
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className="w-10 h-10 rounded-2xl bg-red-50 dark:bg-red-950/30 flex items-center justify-center"><span className="material-symbols-rounded text-red-500">smartphone</span></div>
+                                    <span className="text-[10px] font-bold py-1 px-2 rounded-full bg-red-50 dark:bg-red-900/40 text-red-600 dark:text-red-400">-3%</span>
+                                </div>
+                                <h3 className="font-bold text-sm text-slate-900 dark:text-white">Doomscrolling</h3>
+                                <p className="text-xs text-slate-400 mt-0.5">Mental</p>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            );
+        };
+
+        const VoiceScreen = ({ onComplete }) => {
+            const [status, setStatus] = useState('Listening...');
+            const [transcript, setTranscript] = useState('');
+            const recognitionRef = useRef(null);
+
+            useEffect(() => {
+                if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                    recognitionRef.current = new SpeechRecognition();
+                    recognitionRef.current.continuous = false;
+                    recognitionRef.current.interimResults = true;
+
+                    recognitionRef.current.onstart = () => setStatus('Listening...');
+
+                    recognitionRef.current.onresult = (event) => {
+                        const current = event.resultIndex;
+                        const transcriptText = event.results[current][0].transcript;
+                        setTranscript(transcriptText);
+                    };
+
+                    recognitionRef.current.onend = () => {
+                        if (transcript.length > 0) {
+                            setStatus('Analyzed by Gemini...');
+                            // Give user a second to see what they said before submitting
+                            setTimeout(() => onComplete(transcript), 1000);
+                        } else {
+                            setStatus('No audio detected. Try again.');
+                        }
+                    };
+
+                    recognitionRef.current.start();
+                } else {
+                    setStatus('Voice API not supported in this browser.');
+                }
+            }, []);
+
+            return (
+                <main className="flex-1 flex flex-col items-center justify-center w-full px-6 relative z-10 gap-8 min-h-[600px]">
+                    <div className="w-full max-w-sm bg-white/70 dark:bg-slate-800/60 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-white/40 dark:border-white/5 transition-all">
+                        <div className="flex items-center gap-2 mb-3">
+                            <div className={`w-2 h-2 rounded-full ${status.includes('Listening') ? 'bg-red-500' : 'bg-blue-500'} animate-pulse`}></div>
+                            <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider">{status}</span>
+                        </div>
+                        <p className="text-slate-800 dark:text-slate-100 text-xl font-medium leading-relaxed">
+                            {transcript || "Speak now..."}
+                        </p>
+                    </div>
+
+                    {/* Visualizer Orb */}
+                    <div className="relative flex items-center justify-center py-8">
+                        <div className="absolute w-[300px] h-[300px] rounded-full border border-primary/10 bg-primary/5 animate-pulse"></div>
+                        <div className="relative w-48 h-48 rounded-full bg-gradient-to-br from-orb-light via-primary to-blue-700 shadow-2xl flex items-center justify-center overflow-hidden z-10">
+                            <div className="absolute inset-0 bg-gradient-to-tl from-transparent via-white/20 to-white/40 rounded-full"></div>
+                            <div className="flex items-center gap-1 h-16 opacity-90 mix-blend-overlay">
+                                {[1, 2, 3, 4, 5].map(i => (
+                                    <div key={i} className="w-1.5 bg-white rounded-full animate-pulse" style={{ height: Math.random() * 40 + 20 + 'px', animationDuration: '0.5s' }}></div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onClick={() => onComplete(null)} className="px-6 py-3 rounded-full text-slate-500 hover:bg-slate-100 transition-colors">Cancel</button>
+                </main>
+            );
+        };
+
+        const InsightsScreen = () => (
+            <main className="flex-1 overflow-y-auto no-scrollbar px-6 space-y-6 pt-6 pb-32">
+                <section className="rounded-[2rem] bg-white dark:bg-slate-800 p-6 shadow-sm">
+                    <div className="mb-6 flex items-start justify-between">
+                        <div>
+                            <h2 className="text-base font-medium text-slate-500 dark:text-slate-400">Confidence Score</h2>
+                            <div className="flex items-baseline gap-2 mt-1">
+                                <span className="text-4xl font-bold text-slate-900 dark:text-white">7.8</span>
+                                <span className="text-sm font-medium text-slate-400">Avg</span>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-1 rounded-full bg-green-50 dark:bg-green-900/30 px-3 py-1 text-green-600 dark:text-green-400">
+                            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>trending_up</span>
+                            <span className="text-xs font-bold">+12%</span>
+                        </div>
+                    </div>
+                    <div className="h-32 bg-slate-50 dark:bg-slate-700/50 rounded-xl flex items-center justify-center text-slate-400 text-sm">
+                        [Chart Visualization Placeholder]
+                    </div>
+                </section>
+                <div className="mt-6 rounded-xl bg-slate-50 dark:bg-slate-700/50 p-4">
+                    <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                        <span className="font-bold text-primary dark:text-blue-400">Insight:</span> You're logging more positive habits in the morning. Keep that momentum!
+                    </p>
+                </div>
+            </main>
+        );
+
+        // --- MAIN APP CONTAINER ---
+
+        const App = () => {
+            const [tab, setTab] = useState('home');
+            const [score, setScore] = useState(22);
+            const [feedback, setFeedback] = useState("Building confidence...");
+            const [isProcessing, setIsProcessing] = useState(false);
+
+            const processInput = async (text) => {
+                if (!text) { setTab('home'); return; }
+
+                setIsProcessing(true);
+                setFeedback("Gemini 3 is thinking...");
+                setTab('home'); // Go back to home to see the update
+
+                const result = await analyzeConfidence(text);
+
+                if (result) {
+                    setScore(prev => Math.min(100, Math.max(0, prev + result.scoreChange)));
+                    setFeedback(result.feedback);
+                }
+                setIsProcessing(false);
+            };
+
+            return (
+                <div className="w-full max-w-[430px] mx-auto min-h-screen flex flex-col relative overflow-hidden bg-background-light dark:bg-background-dark shadow-2xl transition-colors duration-300">
+                    <Header level={score >= 100 ? "Level 12 • Titan" : score > 40 ? "Level 8 • Forger" : "Level 5 • Apprentice"} />
+
+                    {tab === 'home' && <HomeScreen score={score} feedback={feedback} setScore={setScore} setTab={setTab} onTextInput={processInput} />}
+                    {tab === 'voice' && <VoiceScreen onComplete={processInput} />}
+                    {tab === 'insights' && <InsightsScreen />}
+                    {tab === 'profile' && <div className="flex-1 flex items-center justify-center text-slate-400">Profile Placeholder</div>}
+
+                    {tab !== 'voice' && <BottomNav activeTab={tab} setTab={setTab} />}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+
+</html>
