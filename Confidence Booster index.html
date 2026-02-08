@@ -4,7 +4,9 @@
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>Confidence Forge - Interactive Demo</title>
+    <title>Confidence Forge - Powered by Gemini 3</title>
+    <meta name="description"
+        content="Track and boost your confidence with AI-powered activity analysis. Built with Google Gemini 3.">
 
     <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com?plugins=forms,typography,container-queries"></script>
@@ -32,6 +34,8 @@
                         "background-light": "#f0f4f8",
                         "background-dark": "#0f172a",
                         "orb-light": "#86efac",
+                        "titan-gold": "#fbbf24",
+                        "titan-glow": "#f59e0b",
                     },
                     fontFamily: {
                         "display": ["Plus Jakarta Sans", "sans-serif"],
@@ -39,6 +43,12 @@
                     borderRadius: { "pill": "9999px" },
                     animation: {
                         'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'spin-slow': 'spin 8s linear infinite',
+                        'bounce-in': 'bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+                        'particle-rise': 'particleRise 2s ease-out forwards',
+                        'glow-pulse': 'glowPulse 2s ease-in-out infinite',
+                        'tilt-shake': 'tiltShake 0.5s ease-in-out',
+                        'score-pop': 'scorePop 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
                     }
                 },
             },
@@ -46,23 +56,94 @@
     </script>
 
     <style>
-        /* --- 3D Capsule Logic --- */
+        /* === 3D CAPSULE SYSTEM === */
+        .capsule-scene {
+            perspective: 1000px;
+            perspective-origin: center center;
+        }
+
+        .capsule-wrapper {
+            transform-style: preserve-3d;
+            transition: transform 0.15s ease-out;
+        }
+
         .potion-container {
             width: 160px;
             height: 320px;
             border-radius: 80px;
-            background: rgba(255, 255, 255, 0.15);
-            box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.05);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.05) 100%);
+            box-shadow:
+                inset 0 4px 20px rgba(255, 255, 255, 0.3),
+                inset 0 -4px 20px rgba(0, 0, 0, 0.1),
+                0 25px 50px -12px rgba(0, 0, 0, 0.25),
+                0 0 0 1px rgba(255, 255, 255, 0.1);
             position: relative;
             overflow: hidden;
-            border: 4px solid rgba(255, 255, 255, 0.4);
+            border: 3px solid rgba(255, 255, 255, 0.5);
             z-index: 10;
-            transition: all 0.5s ease;
+            transition: all 0.5s ease, box-shadow 0.3s ease;
+            transform-style: preserve-3d;
+            backdrop-filter: blur(10px);
+        }
+
+        .potion-container::before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 20px;
+            right: 60px;
+            height: 60px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0) 100%);
+            border-radius: 40px;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .potion-container::after {
+            content: '';
+            position: absolute;
+            bottom: 20px;
+            right: 15px;
+            width: 30px;
+            height: 80px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.15) 100%);
+            border-radius: 20px;
+            z-index: 100;
+            pointer-events: none;
         }
 
         .dark .potion-container {
-            background: rgba(255, 255, 255, 0.05);
-            border-color: rgba(255, 255, 255, 0.1);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.02) 100%);
+            border-color: rgba(255, 255, 255, 0.15);
+            box-shadow:
+                inset 0 4px 20px rgba(255, 255, 255, 0.1),
+                inset 0 -4px 20px rgba(0, 0, 0, 0.3),
+                0 25px 50px -12px rgba(0, 0, 0, 0.5),
+                0 0 0 1px rgba(255, 255, 255, 0.05);
+        }
+
+        /* TITAN MODE CAPSULE */
+        .titan-mode .potion-container {
+            border-color: rgba(251, 191, 36, 0.8);
+            box-shadow:
+                inset 0 4px 20px rgba(251, 191, 36, 0.3),
+                inset 0 -4px 20px rgba(0, 0, 0, 0.1),
+                0 0 60px rgba(251, 191, 36, 0.4),
+                0 0 120px rgba(251, 191, 36, 0.2),
+                0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            animation: glowPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes glowPulse {
+
+            0%,
+            100% {
+                box-shadow: inset 0 4px 20px rgba(251, 191, 36, 0.3), 0 0 60px rgba(251, 191, 36, 0.4), 0 0 120px rgba(251, 191, 36, 0.2);
+            }
+
+            50% {
+                box-shadow: inset 0 4px 20px rgba(251, 191, 36, 0.5), 0 0 80px rgba(251, 191, 36, 0.6), 0 0 160px rgba(251, 191, 36, 0.3);
+            }
         }
 
         /* The Liquid */
@@ -71,8 +152,12 @@
             bottom: 0;
             left: 0;
             right: 0;
-            transition: height 1.5s cubic-bezier(0.4, 0, 0.2, 1), background 1.5s ease;
-            box-shadow: 0 0 30px rgba(59, 130, 246, 0.4);
+            transition: height 1s cubic-bezier(0.34, 1.56, 0.64, 1), background 1s ease;
+            box-shadow: 0 -10px 40px rgba(59, 130, 246, 0.5);
+        }
+
+        .titan-mode .potion-fill {
+            box-shadow: 0 -10px 60px rgba(251, 191, 36, 0.6);
         }
 
         /* The Wave Animation */
@@ -82,9 +167,20 @@
             left: -50%;
             width: 200%;
             height: 40px;
-            background: rgba(255, 255, 255, 0.3);
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.4));
             border-radius: 40%;
-            animation: wave 4s infinite linear;
+            animation: wave 3s infinite linear;
+        }
+
+        .potion-wave-2 {
+            position: absolute;
+            top: -15px;
+            left: -30%;
+            width: 180%;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 45%;
+            animation: wave 4s infinite linear reverse;
         }
 
         @keyframes wave {
@@ -97,27 +193,101 @@
             }
         }
 
-        /* Bubbles */
+        /* Enhanced Bubbles */
         .bubble {
             position: absolute;
-            background: rgba(255, 255, 255, 0.6);
+            background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.4));
             border-radius: 50%;
             animation: float 3s infinite ease-in;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
         }
 
         @keyframes float {
             0% {
-                transform: translateY(0px);
+                transform: translateY(0px) scale(0.5);
+                opacity: 0;
+            }
+
+            20% {
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(-80px) scale(1);
+                opacity: 0;
+            }
+        }
+
+        /* Particles */
+        .particle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: particleRise 2s ease-out forwards;
+        }
+
+        @keyframes particleRise {
+            0% {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(-200px) scale(0);
+                opacity: 0;
+            }
+        }
+
+        /* Score Animation */
+        @keyframes scorePop {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.3);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes bounceIn {
+            0% {
+                transform: scale(0.3);
                 opacity: 0;
             }
 
             50% {
-                opacity: 0.8;
+                transform: scale(1.05);
+            }
+
+            70% {
+                transform: scale(0.9);
             }
 
             100% {
-                transform: translateY(-40px);
-                opacity: 0;
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes tiltShake {
+
+            0%,
+            100% {
+                transform: rotate(0deg);
+            }
+
+            25% {
+                transform: rotate(-3deg);
+            }
+
+            75% {
+                transform: rotate(3deg);
             }
         }
 
@@ -130,6 +300,43 @@
             text-shadow: 0 1px 0 #4a5568, 0 2px 0 #2d3748, 0 3px 0 #1a202c, 0 4px 0 #171923, 0 10px 20px rgba(0, 0, 0, 0.35);
         }
 
+        .titan-mode .text-3d {
+            text-shadow: 0 0 20px rgba(251, 191, 36, 0.8), 0 0 40px rgba(251, 191, 36, 0.4), 0 2px 0 #b45309;
+            color: #fbbf24 !important;
+        }
+
+        /* Ambient Background */
+        .ambient-glow {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.4;
+            pointer-events: none;
+            transition: all 1s ease;
+        }
+
+        .titan-mode .ambient-glow {
+            background: radial-gradient(circle, rgba(251, 191, 36, 0.6) 0%, transparent 70%);
+            opacity: 0.6;
+        }
+
+        /* Voice Waveform */
+        .waveform-bar {
+            animation: waveformPulse 0.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes waveformPulse {
+            0% {
+                transform: scaleY(0.3);
+            }
+
+            100% {
+                transform: scaleY(1);
+            }
+        }
+
         .no-scrollbar::-webkit-scrollbar {
             display: none;
         }
@@ -138,6 +345,44 @@
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
+
+        /* Habit Card Hover */
+        .habit-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .habit-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.15);
+        }
+
+        .habit-card:active {
+            transform: scale(0.95);
+        }
+
+        /* Golden Shower Particles */
+        .golden-particle {
+            position: fixed;
+            width: 6px;
+            height: 6px;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: goldenFall 3s linear forwards;
+            z-index: 1000;
+        }
+
+        @keyframes goldenFall {
+            0% {
+                transform: translateY(-20px) rotate(0deg);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
     </style>
 </head>
 
@@ -145,16 +390,42 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+        const { useState, useEffect, useRef, useCallback } = React;
 
-        // --- GEMINI 3 LOGIC ---
+        // === STORAGE HELPERS ===
+        const STORAGE_KEY = 'confidence_forge_data';
 
+        const loadFromStorage = () => {
+            try {
+                const data = localStorage.getItem(STORAGE_KEY);
+                if (data) {
+                    return JSON.parse(data);
+                }
+            } catch (e) {
+                console.error('Failed to load from storage:', e);
+            }
+            return { score: 22, history: [], titanUnlocked: false };
+        };
+
+        const saveToStorage = (data) => {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            } catch (e) {
+                console.error('Failed to save to storage:', e);
+            }
+        };
+
+        // === HAPTIC FEEDBACK ===
+        const triggerHaptic = (pattern = [50]) => {
+            if ('vibrate' in navigator) {
+                navigator.vibrate(pattern);
+            }
+        };
+
+        // === GEMINI 3 LOGIC ===
         const analyzeConfidence = async (inputText) => {
             const url = '/api/analyze';
-
-            const payload = {
-                message: inputText
-            };
+            const payload = { message: inputText };
 
             try {
                 const response = await fetch(url, {
@@ -176,16 +447,52 @@
             }
         };
 
-        // --- COMPONENTS ---
+        // === PARTICLE SYSTEM ===
+        const createParticles = (container, count = 12, color = '#3B82F6') => {
+            for (let i = 0; i < count; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = `${Math.random() * 100}%`;
+                particle.style.background = color;
+                particle.style.animationDelay = `${Math.random() * 0.5}s`;
+                particle.style.animationDuration = `${1.5 + Math.random()}s`;
+                container.appendChild(particle);
+                setTimeout(() => particle.remove(), 2500);
+            }
+        };
 
-        // 1. Navigation Bar
+        const createGoldenShower = () => {
+            const container = document.body;
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'golden-particle';
+                particle.style.left = `${Math.random() * 100}vw`;
+                particle.style.animationDelay = `${Math.random() * 2}s`;
+                particle.style.width = `${4 + Math.random() * 8}px`;
+                particle.style.height = particle.style.width;
+                container.appendChild(particle);
+                setTimeout(() => particle.remove(), 5000);
+            }
+        };
+
+        // === COMPONENTS ===
+
+        // Navigation Bar
         const BottomNav = ({ activeTab, setTab }) => (
-            <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-[380px] h-20 bg-slate-900 dark:bg-slate-800/90 backdrop-blur-xl rounded-[2.5rem] flex items-center justify-around px-4 shadow-2xl z-50">
-                {['home', 'mic', 'analytics', 'person'].map((icon) => (
+            <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-[380px] h-20 bg-slate-900 dark:bg-slate-800/90 backdrop-blur-xl rounded-[2.5rem] flex items-center justify-around px-4 shadow-2xl z-50 border border-white/5">
+                {[
+                    { icon: 'home', tab: 'home' },
+                    { icon: 'mic', tab: 'voice' },
+                    { icon: 'analytics', tab: 'insights' },
+                    { icon: 'person', tab: 'profile' }
+                ].map(({ icon, tab }) => (
                     <button
                         key={icon}
-                        onClick={() => setTab(icon === 'mic' ? 'voice' : icon === 'analytics' ? 'insights' : icon === 'person' ? 'profile' : 'home')}
-                        className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${activeTab === (icon === 'mic' ? 'voice' : icon === 'analytics' ? 'insights' : icon === 'person' ? 'profile' : 'home') ? 'bg-slate-700/50 text-white' : 'text-slate-500 hover:text-white'}`}
+                        onClick={() => { setTab(tab); triggerHaptic(); }}
+                        className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 ${activeTab === tab
+                                ? 'bg-gradient-to-br from-primary to-blue-600 text-white shadow-lg shadow-primary/30 scale-110'
+                                : 'text-slate-500 hover:text-white hover:bg-slate-700/50'
+                            }`}
                     >
                         <span className="material-symbols-rounded">{icon}</span>
                     </button>
@@ -193,75 +500,161 @@
             </nav>
         );
 
-        // 2. Header
-        const Header = ({ level }) => (
-            <header className="pt-12 px-6 pb-4 flex items-center justify-between sticky top-0 z-50 bg-inherit/80 backdrop-blur-sm">
+        // Header
+        const Header = ({ level, isTitan }) => (
+            <header className={`pt-12 px-6 pb-4 flex items-center justify-between sticky top-0 z-50 backdrop-blur-md transition-all duration-500 ${isTitan ? 'bg-gradient-to-r from-amber-500/10 to-orange-500/10' : 'bg-inherit/80'}`}>
                 <div className="flex items-center gap-3">
                     <div className="relative">
-                        <img className="w-12 h-12 rounded-2xl bg-white p-0.5 border border-slate-200 dark:border-slate-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBzYVCcwy5zYR-ZF7OZMSZqI3TH-7-neapXwVs7ARpCmF8Qi37sZN3j6pT7y7VaXgTA-88ByGS5fmjb0HaRSCXTvreU-wx5b4GPTmXFOGrYA196o6VRjhEVHI3UAgsLuH_wow_DCNpRgAW4Cu-IswgT4dKSwaZ6mobyaTvXd-FEirDyDiGhs_oPdWhmTnomqr5iUYDE1teWnlIdwhw3TanIjGZrceVDVuVHbY999uOCBMofEXIVN3wJlyjn17ZfG9-r2DkMHhEL2Wc" />
-                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white dark:border-slate-900 rounded-full"></div>
+                        <img className={`w-12 h-12 rounded-2xl bg-white p-0.5 border-2 transition-all duration-300 ${isTitan ? 'border-amber-400 shadow-lg shadow-amber-500/30' : 'border-slate-200 dark:border-slate-700'}`} src="https://lh3.googleusercontent.com/aida-public/AB6AXuBzYVCcwy5zYR-ZF7OZMSZqI3TH-7-neapXwVs7ARpCmF8Qi37sZN3j6pT7y7VaXgTA-88ByGS5fmjb0HaRSCXTvreU-wx5b4GPTmXFOGrYA196o6VRjhEVHI3UAgsLuH_wow_DCNpRgAW4Cu-IswgT4dKSwaZ6mobyaTvXd-FEirDyDiGhs_oPdWhmTnomqr5iUYDE1teWnlIdwhw3TanIjGZrceVDVuVHbY999uOCBMofEXIVN3wJlyjn17ZfG9-r2DkMHhEL2Wc" />
+                        <div className={`absolute -bottom-1 -right-1 w-4 h-4 border-2 border-white dark:border-slate-900 rounded-full transition-colors ${isTitan ? 'bg-amber-400' : 'bg-green-500'}`}></div>
                     </div>
                     <div>
                         <h1 className="font-bold text-lg leading-tight text-slate-900 dark:text-white">Hi, Alex 👋</h1>
-                        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{level}</p>
+                        <p className={`text-xs font-semibold uppercase tracking-wider transition-colors ${isTitan ? 'text-amber-500' : 'text-slate-400'}`}>
+                            {isTitan && <span className="mr-1">🏆</span>}{level}
+                        </p>
                     </div>
                 </div>
-                <button onClick={() => document.documentElement.classList.toggle('dark')} className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm border border-slate-100 dark:border-slate-700">
+                <button onClick={() => document.documentElement.classList.toggle('dark')} className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm border border-slate-100 dark:border-slate-700 hover:scale-110 transition-transform">
                     <span className="material-symbols-rounded text-slate-600 dark:text-slate-300">contrast</span>
                 </button>
             </header>
         );
 
-        // 3. The 3D Liquid Capsule (The Hero)
-        const ConfidenceCapsule = ({ score }) => {
-            // Determine styles based on score
-            let gradient, text, glowColor;
+        // 3D Liquid Capsule
+        const ConfidenceCapsule = ({ score, onScoreChange, isTitan }) => {
+            const containerRef = useRef(null);
+            const wrapperRef = useRef(null);
+            const [tilt, setTilt] = useState({ x: 0, y: 0 });
+            const [isAnimating, setIsAnimating] = useState(false);
 
+            // Mouse/Touch parallax handler
+            const handleMove = useCallback((clientX, clientY) => {
+                if (!containerRef.current) return;
+                const rect = containerRef.current.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                const rotateY = ((clientX - centerX) / (rect.width / 2)) * 15;
+                const rotateX = -((clientY - centerY) / (rect.height / 2)) * 15;
+                setTilt({ x: rotateX, y: rotateY });
+            }, []);
+
+            const handleMouseMove = (e) => handleMove(e.clientX, e.clientY);
+            const handleTouchMove = (e) => {
+                if (e.touches[0]) handleMove(e.touches[0].clientX, e.touches[0].clientY);
+            };
+            const handleLeave = () => setTilt({ x: 0, y: 0 });
+
+            // Score change animation
+            useEffect(() => {
+                setIsAnimating(true);
+                const timer = setTimeout(() => setIsAnimating(false), 400);
+
+                // Create particles on score increase
+                if (wrapperRef.current && onScoreChange > 0) {
+                    createParticles(wrapperRef.current, 15, isTitan ? '#fbbf24' : '#3B82F6');
+                }
+
+                return () => clearTimeout(timer);
+            }, [score]);
+
+            // Determine gradient based on score
+            let gradient;
             if (score < 30) {
-                gradient = "linear-gradient(180deg, #94a3b8 0%, #cbd5e1 100%)"; // Grey/Low
-                text = "Confidence fading...";
-                glowColor = "rgba(148, 163, 184, 0.4)";
+                gradient = "linear-gradient(180deg, #64748b 0%, #94a3b8 50%, #cbd5e1 100%)";
             } else if (score < 70) {
-                gradient = "linear-gradient(180deg, #F59E0B 0%, #EF4444 30%, #3B82F6 70%, #10B981 100%)"; // The "Juicy" Mix
-                text = "Building confidence...";
-                glowColor = "rgba(59, 130, 246, 0.4)";
+                gradient = "linear-gradient(180deg, #10B981 0%, #3B82F6 35%, #8B5CF6 65%, #EC4899 100%)";
             } else if (score < 100) {
-                gradient = "linear-gradient(180deg, #F59E0B 0%, #EF4444 30%, #3B82F6 70%, #10B981 100%)";
-                text = "You're on fire!";
-                glowColor = "rgba(59, 130, 246, 0.6)";
+                gradient = "linear-gradient(180deg, #F59E0B 0%, #EF4444 30%, #EC4899 50%, #8B5CF6 70%, #3B82F6 100%)";
             } else {
-                gradient = "radial-gradient(circle at 50% 30%, #FFFFFF 0%, #93C5FD 25%, #3B82F6 60%, #1D4ED8 100%)"; // 100% Glow
-                text = "UNSTOPPABLE";
-                glowColor = "rgba(59, 130, 246, 0.9)";
+                gradient = "linear-gradient(180deg, #FFFFFF 0%, #FEF3C7 20%, #FCD34D 40%, #F59E0B 60%, #DC2626 80%, #7C2D12 100%)";
             }
 
             return (
-                <div className="flex flex-col items-center py-6 relative">
-                    <div className="relative mb-6">
-                        {score === 100 && <div className="absolute inset-0 bg-blue-500/30 blur-3xl rounded-full scale-150 animate-pulse"></div>}
+                <div
+                    ref={containerRef}
+                    className={`capsule-scene flex flex-col items-center py-8 relative ${isTitan ? 'titan-mode' : ''}`}
+                    onMouseMove={handleMouseMove}
+                    onMouseLeave={handleLeave}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleLeave}
+                >
+                    {/* Ambient Glow */}
+                    <div
+                        className="ambient-glow"
+                        style={{
+                            background: isTitan
+                                ? 'radial-gradient(circle, rgba(251, 191, 36, 0.5) 0%, transparent 70%)'
+                                : `radial-gradient(circle, ${score < 30 ? 'rgba(148, 163, 184, 0.3)' : 'rgba(59, 130, 246, 0.3)'} 0%, transparent 70%)`
+                        }}
+                    />
+
+                    <div
+                        ref={wrapperRef}
+                        className="capsule-wrapper relative mb-6"
+                        style={{
+                            transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
+                        }}
+                    >
+                        {isTitan && <div className="absolute inset-0 bg-amber-500/20 blur-3xl rounded-full scale-150 animate-pulse"></div>}
 
                         <div className="potion-container">
-                            <div className="potion-fill" style={{ height: `${score}%`, background: gradient }}>
+                            <div
+                                className="potion-fill"
+                                style={{
+                                    height: `${Math.min(100, Math.max(5, score))}%`,
+                                    background: gradient,
+                                }}
+                            >
                                 <div className="potion-wave"></div>
-                                {/* Bubbles */}
-                                <div className="bubble left-1/4 w-2 h-2" style={{ animationDuration: '2s' }}></div>
-                                <div className="bubble left-3/4 w-3 h-3" style={{ animationDuration: '4s', animationDelay: '1s' }}></div>
+                                <div className="potion-wave-2"></div>
+                                {/* Enhanced Bubbles */}
+                                <div className="bubble left-[20%] w-2 h-2" style={{ animationDuration: '2s' }}></div>
+                                <div className="bubble left-[50%] w-3 h-3" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }}></div>
+                                <div className="bubble left-[75%] w-2 h-2" style={{ animationDuration: '3s', animationDelay: '1s' }}></div>
+                                <div className="bubble left-[35%] w-4 h-4" style={{ animationDuration: '3.5s', animationDelay: '1.5s' }}></div>
+                                <div className="bubble left-[60%] w-2 h-2" style={{ animationDuration: '2.2s', animationDelay: '0.8s' }}></div>
                             </div>
                         </div>
 
-                        <div className="absolute -right-20 top-1/4 translate-y-[-50%] z-20">
-                            <span className="text-5xl font-extrabold text-slate-800 dark:text-white block text-3d tracking-tight">~{score}%</span>
-                            <span className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest pl-1">Confidence</span>
+                        {/* Score Display */}
+                        <div className="absolute -right-24 top-1/4 translate-y-[-50%] z-20">
+                            <span
+                                className={`text-5xl font-extrabold block text-3d tracking-tight transition-all ${isAnimating ? 'animate-score-pop' : ''} ${isTitan ? 'text-amber-400' : 'text-slate-800 dark:text-white'}`}
+                            >
+                                ~{score}%
+                            </span>
+                            <span className={`text-sm font-bold uppercase tracking-widest pl-1 ${isTitan ? 'text-amber-500' : 'text-slate-500 dark:text-slate-400'}`}>
+                                Confidence
+                            </span>
                         </div>
                     </div>
-                    <p className="text-slate-500 dark:text-slate-400 font-semibold tracking-wide animate-pulse">{text}</p>
                 </div>
             );
         };
 
-        // --- SCREENS ---
+        // Habit Button Component
+        const HabitButton = ({ icon, label, category, change, color, onClick }) => (
+            <div
+                onClick={onClick}
+                className={`habit-card bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm cursor-pointer`}
+            >
+                <div className="flex justify-between items-start mb-3">
+                    <div className={`w-10 h-10 rounded-2xl ${color.bg} flex items-center justify-center`}>
+                        <span className={`material-symbols-rounded ${color.icon}`}>{icon}</span>
+                    </div>
+                    <span className={`text-[10px] font-bold py-1 px-2 rounded-full ${color.badge}`}>
+                        {change > 0 ? '+' : ''}{change}%
+                    </span>
+                </div>
+                <h3 className="font-bold text-sm text-slate-900 dark:text-white">{label}</h3>
+                <p className="text-xs text-slate-400 mt-0.5">{category}</p>
+            </div>
+        );
 
-        const HomeScreen = ({ score, feedback, setScore, setTab, onTextInput }) => {
+        // === SCREENS ===
+
+        const HomeScreen = ({ score, feedback, setTab, onTextInput, isTitan, lastChange }) => {
             const [inputValue, setInputValue] = useState("");
 
             const handleEnter = (e) => {
@@ -271,38 +664,51 @@
                 }
             };
 
+            const habits = [
+                { icon: 'fitness_center', label: 'Gym Session', category: 'Physical', change: 5, color: { bg: 'bg-green-50 dark:bg-green-950/30', icon: 'text-green-500', badge: 'bg-green-50 dark:bg-green-900/40 text-green-600 dark:text-green-400' }, text: "I had a great gym session" },
+                { icon: 'smartphone', label: 'Doomscrolling', category: 'Mental', change: -3, color: { bg: 'bg-red-50 dark:bg-red-950/30', icon: 'text-red-500', badge: 'bg-red-50 dark:bg-red-900/40 text-red-600 dark:text-red-400' }, text: "I spent 2 hours doomscrolling" },
+                { icon: 'groups', label: 'Social Event', category: 'Social', change: 8, color: { bg: 'bg-purple-50 dark:bg-purple-950/30', icon: 'text-purple-500', badge: 'bg-purple-50 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400' }, text: "I went to a social event and met new people" },
+                { icon: 'menu_book', label: 'Learning', category: 'Mental', change: 4, color: { bg: 'bg-blue-50 dark:bg-blue-950/30', icon: 'text-blue-500', badge: 'bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400' }, text: "I spent an hour learning something new" },
+                { icon: 'self_improvement', label: 'Self-Care', category: 'Wellness', change: 6, color: { bg: 'bg-teal-50 dark:bg-teal-950/30', icon: 'text-teal-500', badge: 'bg-teal-50 dark:bg-teal-900/40 text-teal-600 dark:text-teal-400' }, text: "I took time for self-care and meditation" },
+                { icon: 'task_alt', label: 'Productivity', category: 'Work', change: 5, color: { bg: 'bg-orange-50 dark:bg-orange-950/30', icon: 'text-orange-500', badge: 'bg-orange-50 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400' }, text: "I completed all my important tasks today" },
+            ];
+
             return (
-                <main className="flex-1 px-6 pb-32">
-                    <ConfidenceCapsule score={score} />
+                <main className="flex-1 px-6 pb-32 overflow-y-auto no-scrollbar">
+                    <ConfidenceCapsule score={score} onScoreChange={lastChange} isTitan={isTitan} />
 
                     {/* Feedback Message */}
-                    <div className="text-center -mt-4 mb-6 h-6">
-                        <p className="text-slate-500 dark:text-slate-400 font-semibold tracking-wide animate-pulse text-sm">{feedback}</p>
+                    <div className="text-center mb-6 min-h-[24px]">
+                        <p className={`font-semibold tracking-wide text-sm transition-all ${isTitan ? 'text-amber-500 animate-pulse' : 'text-slate-500 dark:text-slate-400'}`}>
+                            {feedback}
+                        </p>
                     </div>
 
-                    {score >= 100 && (
-                        <div className="flex justify-center mb-6">
-                            <button className="group w-full max-w-[280px] relative bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-500 p-[2px] rounded-2xl shadow-[0_0_25px_rgba(251,191,36,0.3)] animate-pulse-fast">
-                                <div className="bg-white dark:bg-slate-900 rounded-[14px] px-4 py-3 flex items-center justify-between relative overflow-hidden h-full">
-                                    <div className="flex items-center gap-3 z-10">
-                                        <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400">
-                                            <span className="material-symbols-rounded">emoji_events</span>
+                    {/* Titan Reward */}
+                    {isTitan && (
+                        <div className="flex justify-center mb-6 animate-bounce-in">
+                            <button className="group w-full max-w-[300px] relative bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 p-[3px] rounded-2xl shadow-[0_0_40px_rgba(251,191,36,0.4)] animate-glow-pulse">
+                                <div className="bg-white dark:bg-slate-900 rounded-[13px] px-5 py-4 flex items-center justify-between relative overflow-hidden h-full">
+                                    <div className="flex items-center gap-4 z-10">
+                                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white shadow-lg">
+                                            <span className="material-symbols-rounded text-2xl">emoji_events</span>
                                         </div>
                                         <div className="text-left">
-                                            <h3 className="font-bold text-slate-800 dark:text-white text-sm">Reward Unlocked</h3>
-                                            <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase">Ready to claim</p>
+                                            <h3 className="font-bold text-slate-800 dark:text-white">🎉 TITAN ACHIEVED!</h3>
+                                            <p className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase">Maximum Confidence</p>
                                         </div>
                                     </div>
-                                    <span className="material-symbols-rounded text-amber-500">arrow_forward</span>
                                 </div>
                             </button>
                         </div>
                     )}
 
                     {/* Input Area */}
-                    <div className="relative mb-10">
-                        <div className="w-full bg-white dark:bg-slate-800 rounded-pill p-1.5 flex items-center shadow-sm border border-slate-100 dark:border-slate-700 focus-within:border-primary transition-colors">
-                            <div className="pl-4 pr-3 text-slate-300" onClick={() => setTab('voice')}><span className="material-symbols-rounded cursor-pointer hover:text-primary">mic</span></div>
+                    <div className="relative mb-8">
+                        <div className="w-full bg-white dark:bg-slate-800 rounded-pill p-1.5 flex items-center shadow-lg border border-slate-100 dark:border-slate-700 focus-within:border-primary focus-within:shadow-primary/20 transition-all">
+                            <div className="pl-4 pr-3 text-slate-300 hover:text-primary transition-colors cursor-pointer" onClick={() => { setTab('voice'); triggerHaptic(); }}>
+                                <span className="material-symbols-rounded">mic</span>
+                            </div>
                             <input
                                 value={inputValue}
                                 onChange={(e) => setInputValue(e.target.value)}
@@ -311,34 +717,29 @@
                                 placeholder="Log your latest win..."
                                 type="text"
                             />
-                            <button onClick={() => { if (inputValue) { onTextInput(inputValue); setInputValue(""); } }} className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+                            <button
+                                onClick={() => { if (inputValue) { onTextInput(inputValue); setInputValue(""); triggerHaptic([50, 50, 50]); } }}
+                                className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white shadow-lg shadow-primary/30 hover:scale-110 transition-transform"
+                            >
                                 <span className="material-symbols-rounded">arrow_upward</span>
                             </button>
                         </div>
                     </div>
 
-                    {/* Habits (Click these to demo score changes) */}
+                    {/* Habits Grid */}
                     <div className="mb-8">
                         <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Recent Habits</h2>
+                            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Quick Actions</h2>
+                            <span className="text-xs text-primary font-semibold">Powered by Gemini 3</span>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
-                            <div onClick={() => onTextInput("I had a great gym session")} className="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm active:scale-95 transition-transform cursor-pointer">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className="w-10 h-10 rounded-2xl bg-green-50 dark:bg-green-950/30 flex items-center justify-center"><span className="material-symbols-rounded text-green-500">fitness_center</span></div>
-                                    <span className="text-[10px] font-bold py-1 px-2 rounded-full bg-green-50 dark:bg-green-900/40 text-green-600 dark:text-green-400">+5%</span>
-                                </div>
-                                <h3 className="font-bold text-sm text-slate-900 dark:text-white">Gym Session</h3>
-                                <p className="text-xs text-slate-400 mt-0.5">Physical</p>
-                            </div>
-                            <div onClick={() => onTextInput("I spent 2 hours doomscrolling")} className="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm active:scale-95 transition-transform cursor-pointer">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className="w-10 h-10 rounded-2xl bg-red-50 dark:bg-red-950/30 flex items-center justify-center"><span className="material-symbols-rounded text-red-500">smartphone</span></div>
-                                    <span className="text-[10px] font-bold py-1 px-2 rounded-full bg-red-50 dark:bg-red-900/40 text-red-600 dark:text-red-400">-3%</span>
-                                </div>
-                                <h3 className="font-bold text-sm text-slate-900 dark:text-white">Doomscrolling</h3>
-                                <p className="text-xs text-slate-400 mt-0.5">Mental</p>
-                            </div>
+                            {habits.map((habit, i) => (
+                                <HabitButton
+                                    key={i}
+                                    {...habit}
+                                    onClick={() => { onTextInput(habit.text); triggerHaptic(); }}
+                                />
+                            ))}
                         </div>
                     </div>
                 </main>
@@ -346,9 +747,11 @@
         };
 
         const VoiceScreen = ({ onComplete }) => {
-            const [status, setStatus] = useState('Listening...');
+            const [status, setStatus] = useState('Initializing...');
             const [transcript, setTranscript] = useState('');
+            const [isListening, setIsListening] = useState(false);
             const recognitionRef = useRef(null);
+            const transcriptRef = useRef('');
 
             useEffect(() => {
                 if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -357,120 +760,271 @@
                     recognitionRef.current.continuous = false;
                     recognitionRef.current.interimResults = true;
 
-                    recognitionRef.current.onstart = () => setStatus('Listening...');
+                    recognitionRef.current.onstart = () => {
+                        setStatus('Listening...');
+                        setIsListening(true);
+                        triggerHaptic([100]);
+                    };
 
                     recognitionRef.current.onresult = (event) => {
                         const current = event.resultIndex;
                         const transcriptText = event.results[current][0].transcript;
+                        transcriptRef.current = transcriptText;
                         setTranscript(transcriptText);
                     };
 
                     recognitionRef.current.onend = () => {
-                        if (transcript.length > 0) {
-                            setStatus('Analyzed by Gemini...');
-                            // Give user a second to see what they said before submitting
-                            setTimeout(() => onComplete(transcript), 1000);
+                        setIsListening(false);
+                        if (transcriptRef.current.length > 0) {
+                            setStatus('Sending to Gemini 3...');
+                            triggerHaptic([50, 100, 50]);
+                            setTimeout(() => onComplete(transcriptRef.current), 1000);
                         } else {
-                            setStatus('No audio detected. Try again.');
+                            setStatus('No audio detected. Tap to retry.');
                         }
+                    };
+
+                    recognitionRef.current.onerror = (e) => {
+                        setIsListening(false);
+                        setStatus(`Error: ${e.error}. Tap to retry.`);
                     };
 
                     recognitionRef.current.start();
                 } else {
-                    setStatus('Voice API not supported in this browser.');
+                    setStatus('Voice not supported in this browser.');
                 }
+
+                return () => {
+                    if (recognitionRef.current) {
+                        recognitionRef.current.stop();
+                    }
+                };
             }, []);
+
+            const retryListening = () => {
+                if (recognitionRef.current && !isListening) {
+                    transcriptRef.current = '';
+                    setTranscript('');
+                    recognitionRef.current.start();
+                }
+            };
 
             return (
                 <main className="flex-1 flex flex-col items-center justify-center w-full px-6 relative z-10 gap-8 min-h-[600px]">
-                    <div className="w-full max-w-sm bg-white/70 dark:bg-slate-800/60 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-white/40 dark:border-white/5 transition-all">
-                        <div className="flex items-center gap-2 mb-3">
-                            <div className={`w-2 h-2 rounded-full ${status.includes('Listening') ? 'bg-red-500' : 'bg-blue-500'} animate-pulse`}></div>
-                            <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider">{status}</span>
+                    {/* Transcript Card */}
+                    <div className="w-full max-w-sm bg-white/80 dark:bg-slate-800/70 backdrop-blur-xl rounded-3xl p-6 shadow-2xl border border-white/50 dark:border-white/10 transition-all">
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className={`w-3 h-3 rounded-full ${isListening ? 'bg-red-500 animate-pulse' : status.includes('Gemini') ? 'bg-blue-500 animate-pulse' : 'bg-slate-400'}`}></div>
+                            <span className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">{status}</span>
                         </div>
-                        <p className="text-slate-800 dark:text-slate-100 text-xl font-medium leading-relaxed">
+                        <p className="text-slate-800 dark:text-slate-100 text-xl font-medium leading-relaxed min-h-[60px]">
                             {transcript || "Speak now..."}
                         </p>
                     </div>
 
-                    {/* Visualizer Orb */}
-                    <div className="relative flex items-center justify-center py-8">
-                        <div className="absolute w-[300px] h-[300px] rounded-full border border-primary/10 bg-primary/5 animate-pulse"></div>
-                        <div className="relative w-48 h-48 rounded-full bg-gradient-to-br from-orb-light via-primary to-blue-700 shadow-2xl flex items-center justify-center overflow-hidden z-10">
+                    {/* Voice Orb */}
+                    <div
+                        className="relative flex items-center justify-center cursor-pointer"
+                        onClick={retryListening}
+                    >
+                        <div className={`absolute w-[280px] h-[280px] rounded-full border-2 transition-all duration-300 ${isListening ? 'border-red-500/30 bg-red-500/10 scale-110' : 'border-primary/20 bg-primary/5'}`}></div>
+                        <div className={`absolute w-[220px] h-[220px] rounded-full border transition-all duration-500 ${isListening ? 'border-red-500/20 animate-ping' : 'border-primary/10'}`}></div>
+
+                        <div className={`relative w-40 h-40 rounded-full shadow-2xl flex items-center justify-center overflow-hidden z-10 transition-all duration-300 ${isListening ? 'bg-gradient-to-br from-red-400 via-red-500 to-red-600 scale-105' : 'bg-gradient-to-br from-orb-light via-primary to-blue-700'}`}>
                             <div className="absolute inset-0 bg-gradient-to-tl from-transparent via-white/20 to-white/40 rounded-full"></div>
-                            <div className="flex items-center gap-1 h-16 opacity-90 mix-blend-overlay">
-                                {[1, 2, 3, 4, 5].map(i => (
-                                    <div key={i} className="w-1.5 bg-white rounded-full animate-pulse" style={{ height: Math.random() * 40 + 20 + 'px', animationDuration: '0.5s' }}></div>
+
+                            {/* Waveform Bars */}
+                            <div className="flex items-center gap-1.5 h-16">
+                                {[...Array(7)].map((_, i) => (
+                                    <div
+                                        key={i}
+                                        className={`waveform-bar w-2 bg-white/90 rounded-full ${isListening ? '' : 'opacity-50'}`}
+                                        style={{
+                                            height: isListening ? `${20 + Math.random() * 40}px` : '20px',
+                                            animationDelay: `${i * 0.1}s`,
+                                            animationDuration: isListening ? '0.3s' : '1s'
+                                        }}
+                                    ></div>
                                 ))}
                             </div>
                         </div>
                     </div>
 
-                    <button onClick={() => onComplete(null)} className="px-6 py-3 rounded-full text-slate-500 hover:bg-slate-100 transition-colors">Cancel</button>
+                    <p className="text-slate-400 text-sm">Tap the orb to retry</p>
+
+                    <button
+                        onClick={() => onComplete(null)}
+                        className="px-8 py-3 rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors font-semibold"
+                    >
+                        Cancel
+                    </button>
                 </main>
             );
         };
 
-        const InsightsScreen = () => (
+        const InsightsScreen = ({ history, score }) => (
             <main className="flex-1 overflow-y-auto no-scrollbar px-6 space-y-6 pt-6 pb-32">
-                <section className="rounded-[2rem] bg-white dark:bg-slate-800 p-6 shadow-sm">
+                {/* Score Overview */}
+                <section className="rounded-[2rem] bg-white dark:bg-slate-800 p-6 shadow-lg">
                     <div className="mb-6 flex items-start justify-between">
                         <div>
-                            <h2 className="text-base font-medium text-slate-500 dark:text-slate-400">Confidence Score</h2>
+                            <h2 className="text-base font-medium text-slate-500 dark:text-slate-400">Current Score</h2>
                             <div className="flex items-baseline gap-2 mt-1">
-                                <span className="text-4xl font-bold text-slate-900 dark:text-white">7.8</span>
-                                <span className="text-sm font-medium text-slate-400">Avg</span>
+                                <span className="text-5xl font-bold text-slate-900 dark:text-white">{score}%</span>
                             </div>
                         </div>
-                        <div className="flex items-center gap-1 rounded-full bg-green-50 dark:bg-green-900/30 px-3 py-1 text-green-600 dark:text-green-400">
-                            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>trending_up</span>
-                            <span className="text-xs font-bold">+12%</span>
+                        <div className={`flex items-center gap-1 rounded-full px-4 py-2 ${score >= 70 ? 'bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400' : 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'}`}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>{score >= 70 ? 'trending_up' : 'trending_flat'}</span>
+                            <span className="text-sm font-bold">{score >= 100 ? 'TITAN' : score >= 70 ? 'Strong' : 'Building'}</span>
                         </div>
                     </div>
-                    <div className="h-32 bg-slate-50 dark:bg-slate-700/50 rounded-xl flex items-center justify-center text-slate-400 text-sm">
-                        [Chart Visualization Placeholder]
+
+                    {/* Mini Progress Bar */}
+                    <div className="h-4 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                        <div
+                            className="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"
+                            style={{ width: `${score}%` }}
+                        ></div>
                     </div>
                 </section>
-                <div className="mt-6 rounded-xl bg-slate-50 dark:bg-slate-700/50 p-4">
+
+                {/* Activity History */}
+                <section className="rounded-[2rem] bg-white dark:bg-slate-800 p-6 shadow-lg">
+                    <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Activity History</h2>
+                    {history.length === 0 ? (
+                        <p className="text-slate-400 text-sm text-center py-8">No activities logged yet. Start tracking!</p>
+                    ) : (
+                        <div className="space-y-3 max-h-[300px] overflow-y-auto no-scrollbar">
+                            {history.slice().reverse().slice(0, 10).map((item, i) => (
+                                <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50">
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${item.change > 0 ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                                        {item.change > 0 ? '+' : ''}{item.change}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium text-slate-700 dark:text-slate-200 truncate">{item.feedback}</p>
+                                        <p className="text-xs text-slate-400">{item.category}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </section>
+
+                {/* AI Insight */}
+                <div className="rounded-2xl bg-gradient-to-r from-primary/10 to-purple-500/10 p-5 border border-primary/20">
+                    <div className="flex items-center gap-2 mb-2">
+                        <span className="material-symbols-rounded text-primary">auto_awesome</span>
+                        <span className="font-bold text-primary">Gemini 3 Insight</span>
+                    </div>
                     <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-                        <span className="font-bold text-primary dark:text-blue-400">Insight:</span> You're logging more positive habits in the morning. Keep that momentum!
+                        {history.length >= 5
+                            ? "You're building momentum! Keep logging activities to unlock Titan status."
+                            : "Log more activities to get personalized insights powered by AI."}
                     </p>
                 </div>
             </main>
         );
 
-        // --- MAIN APP CONTAINER ---
+        // === MAIN APP ===
 
         const App = () => {
             const [tab, setTab] = useState('home');
-            const [score, setScore] = useState(22);
+            const [data, setData] = useState(() => loadFromStorage());
             const [feedback, setFeedback] = useState("Building confidence...");
             const [isProcessing, setIsProcessing] = useState(false);
+            const [lastChange, setLastChange] = useState(0);
+
+            const score = data.score;
+            const history = data.history;
+            const isTitan = score >= 100;
+
+            // Save to storage whenever data changes
+            useEffect(() => {
+                saveToStorage(data);
+            }, [data]);
+
+            // Titan mode celebration
+            useEffect(() => {
+                if (isTitan && !data.titanUnlocked) {
+                    createGoldenShower();
+                    triggerHaptic([100, 50, 100, 50, 200]);
+                    setData(prev => ({ ...prev, titanUnlocked: true }));
+                }
+            }, [isTitan]);
 
             const processInput = async (text) => {
                 if (!text) { setTab('home'); return; }
 
                 setIsProcessing(true);
-                setFeedback("Gemini 3 is thinking...");
-                setTab('home'); // Go back to home to see the update
+                setFeedback("Gemini 3 is analyzing...");
+                setTab('home');
+                triggerHaptic([50]);
 
                 const result = await analyzeConfidence(text);
 
                 if (result) {
-                    setScore(prev => Math.min(100, Math.max(0, prev + result.scoreChange)));
+                    const newScore = Math.min(100, Math.max(0, score + result.scoreChange));
+                    setLastChange(result.scoreChange);
+
+                    setData(prev => ({
+                        ...prev,
+                        score: newScore,
+                        history: [...prev.history, {
+                            text,
+                            change: result.scoreChange,
+                            feedback: result.feedback,
+                            category: result.category,
+                            timestamp: Date.now()
+                        }],
+                        titanUnlocked: newScore >= 100 ? prev.titanUnlocked : false
+                    }));
+
                     setFeedback(result.feedback);
+
+                    if (result.scoreChange > 0) {
+                        triggerHaptic([50, 50, 100]);
+                    } else if (result.scoreChange < 0) {
+                        triggerHaptic([200]);
+                    }
                 }
                 setIsProcessing(false);
             };
 
-            return (
-                <div className="w-full max-w-[430px] mx-auto min-h-screen flex flex-col relative overflow-hidden bg-background-light dark:bg-background-dark shadow-2xl transition-colors duration-300">
-                    <Header level={score >= 100 ? "Level 12 • Titan" : score > 40 ? "Level 8 • Forger" : "Level 5 • Apprentice"} />
+            const getLevel = () => {
+                if (score >= 100) return "Level 12 • Titan";
+                if (score >= 80) return "Level 10 • Champion";
+                if (score >= 60) return "Level 8 • Forger";
+                if (score >= 40) return "Level 6 • Warrior";
+                if (score >= 20) return "Level 4 • Apprentice";
+                return "Level 2 • Novice";
+            };
 
-                    {tab === 'home' && <HomeScreen score={score} feedback={feedback} setScore={setScore} setTab={setTab} onTextInput={processInput} />}
+            return (
+                <div className={`w-full max-w-[430px] mx-auto min-h-screen flex flex-col relative overflow-hidden shadow-2xl transition-all duration-500 ${isTitan ? 'bg-gradient-to-b from-amber-50 to-orange-50 dark:from-slate-950 dark:to-amber-950/20' : 'bg-background-light dark:bg-background-dark'}`}>
+                    <Header level={getLevel()} isTitan={isTitan} />
+
+                    {tab === 'home' && <HomeScreen score={score} feedback={feedback} setTab={setTab} onTextInput={processInput} isTitan={isTitan} lastChange={lastChange} />}
                     {tab === 'voice' && <VoiceScreen onComplete={processInput} />}
-                    {tab === 'insights' && <InsightsScreen />}
-                    {tab === 'profile' && <div className="flex-1 flex items-center justify-center text-slate-400">Profile Placeholder</div>}
+                    {tab === 'insights' && <InsightsScreen history={history} score={score} />}
+                    {tab === 'profile' && (
+                        <main className="flex-1 flex flex-col items-center justify-center text-slate-400 gap-4 px-6">
+                            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white text-4xl font-bold shadow-xl">
+                                A
+                            </div>
+                            <h2 className="text-xl font-bold text-slate-800 dark:text-white">Alex</h2>
+                            <p className="text-sm text-slate-500">{getLevel()}</p>
+                            <div className="mt-4 text-center">
+                                <p className="text-xs text-slate-400">Total Activities: {history.length}</p>
+                                <p className="text-xs text-slate-400">Current Score: {score}%</p>
+                            </div>
+                            <button
+                                onClick={() => { setData({ score: 22, history: [], titanUnlocked: false }); triggerHaptic(); }}
+                                className="mt-8 px-6 py-2 rounded-full bg-red-500/10 text-red-500 text-sm font-semibold hover:bg-red-500/20 transition-colors"
+                            >
+                                Reset Progress
+                            </button>
+                        </main>
+                    )}
 
                     {tab !== 'voice' && <BottomNav activeTab={tab} setTab={setTab} />}
                 </div>
