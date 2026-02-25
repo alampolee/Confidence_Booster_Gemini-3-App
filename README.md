@@ -17,3 +17,13 @@ You cannot see Confidence, but this App can Track it.
 1.  User speaks a log,text or input button ("I went to the gym").
 2.  Gemini 3 analyzes the impact (+5 points).
 3.  The "Antigravity" liquid engine updates the visual state.
+
+## 📦 Installation
+To install and run this app locally, follow these steps:
+
+```bash
+npm install
+npm start
+```
+
+This will start the development server and open the app in your default browser.
